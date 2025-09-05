@@ -143,6 +143,25 @@ def quick_eda(data: DataBundle):
     print("\nDescribe:")
     print(df.describe())
 
+def cv_report(name, model, data):
+    """
+    Generates and prints a cross-validation report for a given model and dataset.
+
+    Parameters:
+        name (str): The name of the model or estimator to display in the report.
+        model (estimator): The machine learning model to evaluate.
+        data (object): An object containing training data with attributes 'X_train' and 'y_train'.
+
+    Returns:
+        tuple: A tuple containing the mean and standard deviation of the cross-validation scores.
+
+    Prints:
+        A formatted string displaying the model name, mean cross-validation score, and its standard deviation.
+    """
+    scores = cross_val_score(model, data.X_train, data.y_train, cv=5)
+    print(f"{name:>14}  CV mean={scores.mean():.4f}  ±{scores.std():.4f}")
+    return scores.mean(), scores.std()
+
 def main():
     """
     Main workflow:
@@ -165,13 +184,10 @@ def main():
     acc2, label2, cm2 = train_and_eval(tree, data, "Decision Tree")
     acc3, label3, cm3 = train_and_eval(rf, data, "Random Forest")  # Train and evaluate RF
 
-    # Cross-validation for Random Forest
-    rf_cv_scores = cross_val_score(
-        rf, np.vstack([data.X_train, data.X_test]), 
-        np.hstack([data.y_train, data.y_test]), 
-        cv=5, scoring="accuracy"
-    )
-    print(f"\nRandom Forest 5-fold CV accuracy: {rf_cv_scores.mean():.3f} ± {rf_cv_scores.std():.3f}")
+    # Cross-validation for the 3 models
+    cv_report("LogReg", logreg, data)
+    cv_report("DecisionTree", tree, data)
+    cv_report("RandomForest", rf, data)
 
     # Plot confusion matrices (one by one)
     plot_cm(cm1, data.target_names, f"{label1} — Confusion Matrix", acc1)
