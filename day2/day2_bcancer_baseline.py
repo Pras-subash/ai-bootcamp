@@ -10,8 +10,9 @@ It covers the following steps:
     4. Model building using pipelines (Logistic Regression, Decision Tree, Random Forest)
     5. Model training and evaluation
     6. Confusion matrix visualization
-    7. Cross-validation for Random Forest
-    8. Summary of results
+    7. ROC-AUC curve plotting for selected models
+    8. Cross-validation for all models
+    9. Summary of results
 
 Main Components:
 ----------------
@@ -22,12 +23,14 @@ Main Components:
 - build_rf_pipeline: Creates a pipeline for random forest (no scaling needed).
 - train_and_eval: Trains a model, evaluates accuracy, and prints a classification report.
 - plot_cm: Plots the confusion matrix for a given model, with optional accuracy in the title.
+- plot_roc(Receiver Operating Characteristic): Plots the ROC curve and computes AUC(Area under curve) for a given model.
 - quick_eda: Displays a quick summary and statistics of the feature data, including head and describe.
-- main: Orchestrates the workflow, including cross-validation for Random Forest.
+- cv_report: Prints cross-validation results for a given model.
+- main: Orchestrates the workflow, including cross-validation and ROC plotting.
 
 Usage:
 ------
-Run this script directly to see printed outputs and confusion matrix plots.
+Run this script directly to see printed outputs and confusion matrix/ROC plots.
 You can modify or extend the pipelines and evaluation steps for experimentation.
 
 Author: Prasanna Subash
@@ -51,6 +54,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import roc_curve, auc
+
 
 RANDOM_SEED = 42
 
@@ -127,6 +132,38 @@ def plot_cm(cm: np.ndarray, labels: list, title: str, accuracy: float = None):
     plt.tight_layout()
     plt.show()
 
+def plot_roc(model, X_test, y_test, title):
+    """
+    Plots the ROC curve and computes the AUC score for a given model.
+
+    Parameters:
+        model (Pipeline or estimator): Trained model with predict_proba or decision_function.
+        X_test (np.ndarray): Test feature data.
+        y_test (np.ndarray): True labels for test data.
+        title (str): Title for the plot.
+
+    Returns:
+        float: The computed AUC score.
+
+    The function will:
+    - Use predict_proba (preferred) or decision_function to get scores.
+    - Compute false positive rate (FPR), true positive rate (TPR), and AUC.
+    - Plot the ROC curve with AUC in the legend.
+    - Show the plot.
+    """
+    # For pipelines with clf at the end
+    proba = model.predict_proba(X_test)[:, 1] if hasattr(model, "predict_proba") \
+            else model.decision_function(X_test)
+    fpr, tpr, _ = roc_curve(y_test, proba)
+    score = auc(fpr, tpr)
+
+    plt.figure()
+    plt.plot(fpr, tpr, label=f"AUC = {score:.3f}")
+    plt.plot([0,1], [0,1], linestyle="--")
+    plt.xlabel("False Positive Rate"); plt.ylabel("True Positive Rate")
+    plt.title(title); plt.legend(); plt.tight_layout(); plt.show()
+    return score
+
 def quick_eda(data: DataBundle):
     """
     Quick exploratory data analysis:
@@ -169,7 +206,7 @@ def main():
     - Runs quick EDA
     - Builds and trains three models (Logistic Regression, Decision Tree, Random Forest)
     - Evaluates models and prints classification reports
-    - Performs cross-validation for Random Forest
+    - Performs cross-validation for all models
     - Plots confusion matrices with accuracy
     - Prints summary of results
     """
@@ -193,6 +230,9 @@ def main():
     plot_cm(cm1, data.target_names, f"{label1} — Confusion Matrix", acc1)
     plot_cm(cm2, data.target_names, f"{label2} — Confusion Matrix", acc2)
     plot_cm(cm3, data.target_names, f"{label3} — Confusion Matrix", acc3)  # Plot RF CM
+
+    auc_lr = plot_roc(logreg, data.X_test, data.y_test, "LogReg ROC")
+    auc_rf = plot_roc(rf,     data.X_test, data.y_test, "RandomForest ROC")
 
     # Simple result summary
     print("\n=== Summary ===")
