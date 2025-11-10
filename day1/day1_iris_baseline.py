@@ -76,7 +76,10 @@ def load_data(test_size: float = 0.2) -> DataBundle:
     print(f"Target shape: {iris.target.shape}")
     print(f"First 5 rows of data:\n{iris.data[:5]}")
     print(f"First 5 targets: {iris.target[:5]}")
-    X = iris.data
+    # X contains all the measurements (features)
+    X = iris.data  # Shape: (150, 4) - 150 flowers, 4 measurements each
+    print("Features we measure:", iris.feature_names)
+    # ['sepal length', 'sepal width', 'petal length', 'petal width']
     y = iris.target
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=RANDOM_SEED, stratify=y
@@ -85,8 +88,8 @@ def load_data(test_size: float = 0.2) -> DataBundle:
 
 def build_logreg_pipeline() -> Pipeline:
     return Pipeline([
-        ("scaler", StandardScaler()),
-        ("clf", LogisticRegression(max_iter=1000, random_state=RANDOM_SEED))
+        ("scaler", StandardScaler()), # A scaler is used to make the dataset scaled and fair.
+        ("clf", LogisticRegression(max_iter=1000, random_state=RANDOM_SEED)) #clf stands for classifier
     ])
 
 def build_tree_pipeline() -> Pipeline:
